@@ -1,0 +1,62 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.google</groupId>
+  <artifactId>gdocsfs</artifactId>
+  <packaging>jar</packaging>
+  <version>0.0.1</version>
+  <name>Google Docs File System</name>
+  <url>http://code.google.com/p/gdocsfs/</url>
+  <inceptionYear>2008</inceptionYear>
+
+  <description>Google Docs File System</description>
+
+  <licenses>
+    <license>
+      <name>Apache License Version 2.0</name>
+      <url>LICENSE.txt</url>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>
+      scm:svn:http://gdocsfs.googlecode.com/svn/trunk/
+    </connection>
+    <developerConnection>
+      scm:svn:https://gdocsfs.googlecode.com/svn/trunk/
+    </developerConnection>
+    <url>http://gdocsfs.googlecode.com/svn/trunk/gdocsfs</url>
+  </scm>
+
+  <issueManagement>
+    <url>http://code.google.com/p/gdocsfs/issues/list</url>
+  </issueManagement>
+
+  <developers>
+    <developer>
+      <id>jonhnnyweslley</id>
+      <name>Jonhnny Weslley</name>
+      <email>jonhnnyweslley [at] gmail.com</email>
+      <timezone>-3</timezone>
+    </developer>
+  </developers>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.4</version>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>3.8.1</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>
