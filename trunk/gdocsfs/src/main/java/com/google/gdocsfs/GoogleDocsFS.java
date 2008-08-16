@@ -51,8 +51,8 @@ public class GoogleDocsFS implements Filesystem3 {
 	private static final Log log = LogFactory.getLog(GoogleDocsFS.class);
 	private static final String DOCUMENTS_FEED = "http://docs.google.com/feeds/documents/private/full";
 	private static final int DEFAULT_MODE = 0444;
-	private static final int BLOCK_SIZE = 1024 * 8;
 	private static final int NAME_LENGTH = 1024;
+	static final int BLOCK_SIZE = 1024 * 8;
 
 	private final Folder root;
 	private final DocsService service;
@@ -83,6 +83,7 @@ public class GoogleDocsFS implements Filesystem3 {
 			document.setSize(getDocumentSize(document));
 			root.addDocument(document);
 		}
+		root.setSize(getDocumentSize(root));
 
 		log.info("created");
 	}
@@ -268,7 +269,8 @@ public class GoogleDocsFS implements Filesystem3 {
 			GoogleDocsFS gdocsfs = new GoogleDocsFS(username, password);
 			FuseMount.mount(fuseArgs, gdocsfs, log);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("exiting", e);
+			System.exit(1);
 		} finally {
 			log.info("exiting");
 		}
