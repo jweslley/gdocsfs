@@ -36,7 +36,6 @@ import com.google.gdata.client.http.HttpAuthToken;
  */
 public class DocumentHandler {
 
-	private static final String HTTP_METHOD = "GET";
 	private static final String USER_AGENT = "gdocsfs";
 
 	private final Log log;
@@ -52,7 +51,7 @@ public class DocumentHandler {
 	public int getContentLength() throws IOException {
 		HttpURLConnection connection = null;
 		try {
-			connection = getConnection();
+			connection = getConnection("HEAD");
 			connection.connect();
 			return getContentLength(connection);
 
@@ -63,8 +62,21 @@ public class DocumentHandler {
 		}
 	}
 
+	private int getContentLength(HttpURLConnection conn) {
+		String contentLengthStr = conn.getHeaderField("Content-Length");
+		int contentLength = -1;
+		if (contentLengthStr != null) {
+			try {
+				contentLength = Integer.parseInt(contentLengthStr);
+			} catch (NumberFormatException e) {
+				log.warn("Can't parse the content lenght.", e);
+			}
+		}
+		return contentLength;
+	}
+
 	public void read(ByteBuffer buf, long offset) throws IOException {
-		HttpURLConnection connection = getConnection();
+		HttpURLConnection connection = getConnection("GET");
 		connection.connect();
 		InputStream is = connection.getInputStream();
 
@@ -74,31 +86,17 @@ public class DocumentHandler {
 		buf.put(buffer, (int) offset, readCount);
 	}
 
-	private HttpURLConnection getConnection() throws IOException {
+	private HttpURLConnection getConnection(String httpMethod) throws IOException {
 		HttpURLConnection.setDefaultAllowUserInteraction(true);
 
 		URL source = document.getDownloadURL();
 		HttpURLConnection connection = (HttpURLConnection) source.openConnection();
 		HttpAuthToken authToken = (HttpAuthToken) service.getAuthTokenFactory().getAuthToken();
-		String header = authToken.getAuthorizationHeader(source, HTTP_METHOD);
+		String header = authToken.getAuthorizationHeader(source, httpMethod);
 		connection.setRequestProperty("Authorization", header);
 		connection.setRequestProperty("User-Agent", USER_AGENT);
-		connection.setRequestMethod(HTTP_METHOD);
+		connection.setRequestMethod(httpMethod);
 		return connection;
-	}
-
-	private int getContentLength(HttpURLConnection conn) {
-		String contentLengthStr = conn.getHeaderField("Content-Length");
-		int contentLength = -1;
-		if (contentLengthStr != null) {
-			try {
-				contentLength = Integer.parseInt(contentLengthStr);
-			} catch (NumberFormatException nfex) {
-				log.warn("Can not parse the content lenght; continuing with download.");
-				nfex.printStackTrace();
-			}
-		}
-		return contentLength;
 	}
 
 	public void release() {
