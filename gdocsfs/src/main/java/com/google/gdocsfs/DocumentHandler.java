@@ -76,17 +76,29 @@ public class DocumentHandler {
 	}
 
 	public void read(ByteBuffer buf, long offset) throws IOException {
-		HttpURLConnection connection = getConnection("GET");
-		connection.connect();
-		InputStream is = connection.getInputStream();
+		log.info("offset: " + offset + " -- buffer: " + buf);
 
-		int capacity = buf.capacity();
-		byte[] buffer = new byte[capacity];
-		int readCount = is.read(buffer, (int) offset, capacity);
-		buf.put(buffer, (int) offset, readCount);
+		HttpURLConnection connection = null;
+		try {
+			connection = getConnection("GET");
+			connection.connect();
+			InputStream is = connection.getInputStream();
+
+			byte[] buffer = new byte[GoogleDocsFS.BLOCK_SIZE];
+			int readCount;
+			while ((readCount = is.read(buffer)) > 0) {
+				buf.put(buffer, 0, readCount);
+			}
+
+		} finally {
+			if (connection != null) {
+				connection.disconnect();
+			}
+		}
 	}
 
-	private HttpURLConnection getConnection(String httpMethod) throws IOException {
+	private HttpURLConnection getConnection(String httpMethod)
+			throws IOException {
 		HttpURLConnection.setDefaultAllowUserInteraction(true);
 
 		URL source = document.getDownloadURL();
