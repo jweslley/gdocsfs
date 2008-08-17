@@ -61,14 +61,6 @@ public class Document {
 		this.lastUpdated = lastUpdated;
 	}
 
-	public DocumentType getDocumentType() {
-		return type;
-	}
-
-	public void setDocumentType(DocumentType type) {
-		this.type = type;
-	}
-
 	public long getSize() {
 		return size;
 	}
@@ -77,12 +69,24 @@ public class Document {
 		this.size = size;
 	}
 
-	public int getFileType() {
-		return FuseFtypeConstants.TYPE_FILE;
+	public DocumentType getDocumentType() {
+		return type;
+	}
+
+	public void setDocumentType(DocumentType type) {
+		this.type = type;
 	}
 
 	public URL getDownloadURL() {
 		return type.getURL(this);
+	}
+
+	public String getMimetype() {
+		return type.getMimetype();
+	}
+
+	public int getFileType() {
+		return FuseFtypeConstants.TYPE_FILE;
 	}
 
 	public Collection<Document> getDocuments() {

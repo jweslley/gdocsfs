@@ -37,7 +37,10 @@ import fuse.FuseDirFiller;
 import fuse.FuseGetattrSetter;
 import fuse.FuseMount;
 import fuse.FuseOpenSetter;
+import fuse.FuseSizeSetter;
 import fuse.FuseStatfsSetter;
+import fuse.XattrLister;
+import fuse.XattrSupport;
 
 /**
  * TODO make doc
@@ -46,9 +49,11 @@ import fuse.FuseStatfsSetter;
  * @version 1.00, 10/08/2008
  * @since 1.0
  */
-public class GoogleDocsFS implements Filesystem3 {
+public class GoogleDocsFS implements Filesystem3, XattrSupport {
 
 	private static final Log log = LogFactory.getLog(GoogleDocsFS.class);
+
+	private static final String ATTR_MIMETYPE = "mimetype";
 	private static final String DOCUMENTS_FEED = "http://docs.google.com/feeds/documents/private/full";
 	private static final int DEFAULT_MODE = 0444;
 	private static final int NAME_LENGTH = 1024;
@@ -254,6 +259,63 @@ public class GoogleDocsFS implements Filesystem3 {
 	}
 
 	public int unlink(String path) {
+		return Errno.EROFS;
+	}
+
+
+	// XattrSupport implementation
+
+	@Override
+	public int getxattr(String path, String name, ByteBuffer dst) {
+		Document document = getDocument(path);
+
+		if (document == null) {
+			return Errno.ENOENT;
+		}
+
+		if (ATTR_MIMETYPE.equals(name)) {
+			dst.put(document.getMimetype().getBytes());
+			return 0;
+		}
+
+		return Errno.ENOATTR;
+	}
+
+	@Override
+	public int getxattrsize(String path, String name, FuseSizeSetter sizeSetter) {
+		Document document = getDocument(path);
+
+		if (document == null) {
+			return Errno.ENOENT;
+		}
+
+		if (ATTR_MIMETYPE.equals(name)) {
+			sizeSetter.setSize(document.getMimetype().getBytes().length);
+			return 0;
+		}
+
+		return Errno.ENOATTR;
+	}
+
+	@Override
+	public int listxattr(String path, XattrLister lister) {
+		Document document = getDocument(path);
+
+		if (document == null) {
+			return Errno.ENOENT;
+		}
+
+		lister.add(ATTR_MIMETYPE);
+		return 0;
+	}
+
+	@Override
+	public int removexattr(String path, String name) {
+		return Errno.EROFS;
+	}
+
+	@Override
+	public int setxattr(String path, String name, ByteBuffer value, int flags) {
 		return Errno.EROFS;
 	}
 
