@@ -1,0 +1,97 @@
+#!/bin/sh
+# -----------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# GDocsFS Start Up Batch script
+# -----------------------------------------------------------------------------
+# This utility allows GDocsFS filesystems to be mounted with the regular
+# 'mount' command, or even to be listed in /etc/fstab
+#
+# Usage:
+#   1. mount.gdocsfs /path/to/gdocsfs/home /path/of/mount/point [options]
+#   2. in /etc/fstab, add:
+#        /path/to/gdocsfs/home /path/of/mount/point gdocsfs noauto[,options]
+# -----------------------------------------------------------------------------
+# Environment Variables
+#
+#   GDOCSFS_HOME     Must point at your GDocsFS installation.
+#
+#   GDOCSFS_OPTS     The parameters passed to the Java VM when running GDocsFS.
+#                      e.g. to set the maximum amount of heap to use, in MB
+#                      set GDOCSFS_OPTS=-Xmx1000m
+#
+#   JAVA_HOME        Must point at your Java Development Kit installation.
+#
+# -----------------------------------------------------------------------------
+
+if [ "$#" -lt "2" ] ; then
+  echo "Google Docs Filesystem (gdocsfs)"
+  echo ""
+  echo "Usage:"
+  echo "  1. mount.gdocsfs /path/to/gdocsfs/home /path/of/mount/point [options]"
+  echo "  2. in /etc/fstab, add:"
+  echo "       /path/to/gdocsfs/home /path/of/mount/point gdocsfs noauto[,options]"
+  exit 1
+fi
+
+# the root of the GDocsFS installation
+GDOCSFS_HOME=$1
+GDOCSFS_CONF_DIR=${GDOCSFS_HOME}/conf
+GDOCSFS_OPTS="-Xmx1000m"
+QUOTED_ARGS=""
+
+if [ "$1" != "" ] ; then
+  shift
+fi
+
+
+# JAVA_HOME
+if [ "$JAVA_HOME" = "" ]; then
+  . $GDOCSFS_HOME/bin/java-config.sh
+fi
+
+if [ "$JAVA_HOME" != "" ]; then
+  # echo "run java in $JAVA_HOME"
+  JAVA_HOME=$JAVA_HOME
+fi
+
+if [ "$JAVA_HOME" = "" ]; then
+  echo "Error: JAVA_HOME is not set."
+  exit 1
+fi
+
+JAVA=$JAVA_HOME/bin/java
+
+# CLASSPATH initially contains $GDOCSFS_CONF_DIR
+CLASSPATH="${GDOCSFS_CONF_DIR}"
+CLASSPATH=${CLASSPATH}:$JAVA_HOME/lib/tools.jar
+
+# get all the GDocsFS jars to load
+for jar in `ls $GDOCSFS_HOME/lib/*.jar` ; do
+  CLASSPATH=$CLASSPATH:$jar
+done
+
+LD_LIBRARY_PATH=$GDOCSFS_HOME/native:$GDOCSFS_HOME/lib \
+    $JAVA $GDOCSFS_OPTS \
+    -classpath "$CLASSPATH" \
+    -Dgdocsfs.home="$GDOCSFS_HOME" \
+    -Dorg.apache.commons.logging.Log=fuse.logging.FuseLog \
+    -Dfuse.logging.level=ERROR \
+    com.google.gdocsfs.Mounter "$@"

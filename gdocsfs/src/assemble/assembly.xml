@@ -1,0 +1,37 @@
+<assembly>
+  <id>${project.version}</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>bin</directory>
+      <fileMode>755</fileMode>
+    </fileSet>
+    <fileSet>
+      <directory>conf</directory>
+    </fileSet>
+    <fileSet>
+      <directory>native</directory>
+    </fileSet>
+    <fileSet>
+      <directory>lib</directory>
+    </fileSet>
+    <fileSet>
+      <includes>
+        <include>*install</include>
+      </includes>
+      <fileMode>755</fileMode>
+    </fileSet>
+  </fileSets>
+  <files>
+    <file>
+      <source>target/${project.artifactId}-${project.version}.jar</source>
+      <outputDirectory>lib</outputDirectory>
+    </file>
+    <file>
+      <source>LICENSE.txt</source>
+      <destName>COPYING</destName>
+    </file>
+  </files>
+</assembly>
