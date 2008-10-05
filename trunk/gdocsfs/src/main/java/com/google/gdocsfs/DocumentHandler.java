@@ -16,6 +16,9 @@
 
 package com.google.gdocsfs;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -97,6 +100,26 @@ public class DocumentHandler {
 		}
 	}
 
+	public void write(ByteBuffer buf, long offset, boolean isWritepage) throws IOException {
+		System.out.println("GoogleDocsFS.write()" + this);
+		System.out.println(isWritepage + " " + buf + " " + offset);
+
+		File tempFile = new File("/tmp", document.getName() + ".gdocs");
+
+		FileOutputStream fos = getOUt(tempFile);
+		fos.getChannel().write(buf, offset);
+	}
+
+	private FileOutputStream fos;
+
+	private FileOutputStream getOUt(File tempFile) throws FileNotFoundException {
+		if (fos == null) {
+			System.out.println("creating output stream to:" + tempFile);
+			fos = new FileOutputStream(tempFile, true);
+		}
+		return fos;
+	}
+
 	private HttpURLConnection getConnection(String httpMethod)
 			throws IOException {
 		HttpURLConnection.setDefaultAllowUserInteraction(true);
@@ -124,5 +147,6 @@ public class DocumentHandler {
 	public String toString() {
 		return "DocumentHandler[" + document + ", hashCode=" + hashCode() + "]";
 	}
+
 
 }

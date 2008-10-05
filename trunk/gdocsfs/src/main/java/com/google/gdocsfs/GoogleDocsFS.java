@@ -34,8 +34,8 @@ import com.google.gdata.util.ServiceException;
 import fuse.Errno;
 import fuse.Filesystem3;
 import fuse.FuseDirFiller;
+import fuse.FuseException;
 import fuse.FuseGetattrSetter;
-import fuse.FuseMount;
 import fuse.FuseOpenSetter;
 import fuse.FuseSizeSetter;
 import fuse.FuseStatfsSetter;
@@ -51,14 +51,14 @@ import fuse.XattrSupport;
  */
 public class GoogleDocsFS implements Filesystem3, XattrSupport {
 
-	private static final Log log = LogFactory.getLog(GoogleDocsFS.class);
 
 	private static final String ATTR_MIMETYPE = "mimetype";
-	private static final String DOCUMENTS_FEED = "http://docs.google.com/feeds/documents/private/full";
-	private static final int DEFAULT_MODE = 0444;
+	private static final int DEFAULT_MODE = 0666;
 	private static final int NAME_LENGTH = 1024;
+	static final String DOCUMENTS_FEED = "http://docs.google.com/feeds/documents/private/full";
 	static final int BLOCK_SIZE = 1024 * 8;
 
+	final Log log = LogFactory.getLog(GoogleDocsFS.class);
 	private final Folder root;
 	private final DocsService service;
 	private final URL documentListFeedUrl;
@@ -226,8 +226,17 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport {
 	// Read-only file system operations
 
 	public int write(String path, Object fh, boolean isWritepage,
-			ByteBuffer buf, long offset) {
-		return Errno.EROFS;
+			ByteBuffer buf, long offset) throws FuseException {
+		if (fh instanceof DocumentHandler) {
+			try {
+				((DocumentHandler) fh).write(buf, offset, isWritepage);
+				return 0;
+
+			} catch (IOException e) {
+				return Errno.EIO;
+			}
+		}
+		return Errno.EBADF;
 	}
 
 	public int link(String from, String to) {
@@ -255,7 +264,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport {
 	}
 
 	public int truncate(String path, long size) {
-		return Errno.EROFS;
+		return 0;
 	}
 
 	public int unlink(String path) {
@@ -317,25 +326,6 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport {
 	@Override
 	public int setxattr(String path, String name, ByteBuffer value, int flags) {
 		return Errno.EROFS;
-	}
-
-
-	// Java entry point
-
-	public static void main(String[] args) {
-		log.info("entering");
-		String[] fuseArgs = new String[] { "-f", "-s", "mpoint" };
-		String username = "";
-		String password = "";
-		try {
-			GoogleDocsFS gdocsfs = new GoogleDocsFS(username, password);
-			FuseMount.mount(fuseArgs, gdocsfs, log);
-		} catch (Exception e) {
-			log.error("exiting", e);
-			System.exit(1);
-		} finally {
-			log.info("exiting");
-		}
 	}
 
 }
