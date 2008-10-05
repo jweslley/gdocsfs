@@ -101,20 +101,20 @@ public class DocumentHandler {
 	}
 
 	public void write(ByteBuffer buf, long offset, boolean isWritepage) throws IOException {
-		System.out.println("GoogleDocsFS.write()" + this);
-		System.out.println(isWritepage + " " + buf + " " + offset);
+		log.info("GoogleDocsFS.write()" + this);
+		log.info(isWritepage + " " + buf + " " + offset);
 
 		File tempFile = new File("/tmp", document.getName() + ".gdocs");
 
-		FileOutputStream fos = getOUt(tempFile);
+		FileOutputStream fos = getOutputStream(tempFile);
 		fos.getChannel().write(buf, offset);
 	}
 
 	private FileOutputStream fos;
 
-	private FileOutputStream getOUt(File tempFile) throws FileNotFoundException {
+	private FileOutputStream getOutputStream(File tempFile) throws FileNotFoundException {
 		if (fos == null) {
-			System.out.println("creating output stream to:" + tempFile);
+			log.info("creating output stream to:" + tempFile);
 			fos = new FileOutputStream(tempFile, true);
 		}
 		return fos;
@@ -135,18 +135,17 @@ public class DocumentHandler {
 	}
 
 	public void release() {
-		log.debug("  " + this + " released");
+		log.info("  " + this + " released");
 	}
 
 	@Override
 	protected void finalize() {
-		log.debug("  " + this + " finalized");
+		log.info("  " + this + " finalized");
 	}
 
 	@Override
 	public String toString() {
 		return "DocumentHandler[" + document + ", hashCode=" + hashCode() + "]";
 	}
-
 
 }

@@ -18,6 +18,7 @@ package com.google.gdocsfs;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -49,8 +50,9 @@ import fuse.XattrSupport;
  * @version 1.00, 10/08/2008
  * @since 1.0
  */
-public class GoogleDocsFS implements Filesystem3, XattrSupport {
+public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 
+	private static final long serialVersionUID = 1L;
 
 	private static final String ATTR_MIMETYPE = "mimetype";
 	private static final int DEFAULT_MODE = 0666;
@@ -72,7 +74,8 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport {
 		DocumentListFeed feed = service.getFeed(documentListFeedUrl,
 				DocumentListFeed.class);
 		List<DocumentListEntry> entries = feed.getEntries();
-
+		
+		log.info(username + " has " + entries.size() + " documents");
 		root = new Folder("");
 
 		for (DocumentListEntry entry : entries) {
@@ -87,10 +90,11 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport {
 			document.setDocumentType(DocumentType.valueOf(type.toUpperCase()));
 			document.setSize(getDocumentSize(document));
 			root.addDocument(document);
+			log.debug(document);
 		}
 		root.setSize(getDocumentSize(root));
 
-		log.info("created");
+		log.info("ready to use");
 	}
 
 
@@ -230,7 +234,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport {
 		if (fh instanceof DocumentHandler) {
 			try {
 				((DocumentHandler) fh).write(buf, offset, isWritepage);
-				return 0;
+				return Errno.EROFS; // TODO just read-only
 
 			} catch (IOException e) {
 				return Errno.EIO;

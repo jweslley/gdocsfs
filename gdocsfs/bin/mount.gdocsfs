@@ -92,6 +92,4 @@ LD_LIBRARY_PATH=$GDOCSFS_HOME/native:$GDOCSFS_HOME/lib \
     $JAVA $GDOCSFS_OPTS \
     -classpath "$CLASSPATH" \
     -Dgdocsfs.home="$GDOCSFS_HOME" \
-    -Dorg.apache.commons.logging.Log=fuse.logging.FuseLog \
-    -Dfuse.logging.level=ERROR \
     com.google.gdocsfs.Mounter "$@"
