@@ -26,7 +26,6 @@ import fuse.FuseMount;
 public class Mounter {
 
 	public static void main(String[] args) {
-		args =new String[]{ "/tmp/gdocs" };
 		ResourceBundle properties = ResourceBundle.getBundle("gdocsfs");
 
 		String username = properties.getString("username");
