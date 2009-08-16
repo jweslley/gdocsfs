@@ -17,18 +17,12 @@
 package com.google.gdocsfs;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-
-import org.apache.commons.logging.Log;
-
-import com.google.gdata.client.docs.DocsService;
-import com.google.gdata.client.http.HttpAuthToken;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.FileChannel;
+import java.util.UUID;
 
 /**
  * TODO make doc
@@ -39,112 +33,73 @@ import com.google.gdata.client.http.HttpAuthToken;
  */
 public class DocumentHandler {
 
-	private static final String USER_AGENT = "gdocsfs";
-
-	private final Log log;
+	private File tempFile;
+	private boolean wasModified;
+	private FileChannel channel;
 	private final Document document;
-	private final DocsService service;
 
-	public DocumentHandler(DocsService service, Document document, Log log) {
-		this.log = log;
+	public DocumentHandler(Document document) {
 		this.document = document;
-		this.service = service;
 	}
 
-	public int getContentLength() throws IOException {
-		HttpURLConnection connection = null;
+	public final boolean isOpen() {
+		return (channel != null) && channel.isOpen();
+	}
+
+	private void checkIsOpen() throws IOException {
+		if (!isOpen()) {
+			throw new ClosedChannelException();
+		}
+	}
+
+	public final DocumentHandler open() throws IOException {
+
+		String uuid = UUID.randomUUID().toString();
+		tempFile = File.createTempFile(uuid, document.getDocumentType().getSuffix());
+		document.downloadTo(tempFile);
+		channel = (new RandomAccessFile(tempFile, "rw")).getChannel();
+		return this;
+	}
+
+	public final void read(ByteBuffer buffer, long offset) throws IOException {
+		checkIsOpen();
+		channel.position(offset);
+		channel.read(buffer);
+	}
+
+	public final void write(ByteBuffer buffer, long offset) throws IOException {
+		checkIsOpen();
+		channel.position(offset);
+		channel.write(buffer);
+		document.setSize(channel.size());
+		wasModified = true;
+	}
+
+	public final void truncate(long size) throws IOException {
+		checkIsOpen();
+		channel.truncate(size);
+		document.setSize(channel.size());
+		wasModified = true;
+	}
+
+	public final void release() throws IOException {
+		checkIsOpen();
+
 		try {
-			connection = getConnection("HEAD");
-			connection.connect();
-			return getContentLength(connection);
+			if (wasModified) {
+				document.uploadFrom(tempFile);
+			}
+
+			tempFile.delete();
 
 		} finally {
-			if (connection != null) {
-				connection.disconnect();
-			}
+			channel.close();
+			channel = null;
 		}
-	}
-
-	private int getContentLength(HttpURLConnection conn) {
-		String contentLengthStr = conn.getHeaderField("Content-Length");
-		int contentLength = -1;
-		if (contentLengthStr != null) {
-			try {
-				contentLength = Integer.parseInt(contentLengthStr);
-			} catch (NumberFormatException e) {
-				log.warn("Can't parse the content lenght.", e);
-			}
-		}
-		return contentLength;
-	}
-
-	public void read(ByteBuffer buf, long offset) throws IOException {
-		log.info("offset: " + offset + " -- buffer: " + buf);
-
-		HttpURLConnection connection = null;
-		try {
-			connection = getConnection("GET");
-			connection.connect();
-			InputStream is = connection.getInputStream();
-
-			byte[] buffer = new byte[GoogleDocsFS.BLOCK_SIZE];
-			int readCount;
-			while ((readCount = is.read(buffer)) > 0) {
-				buf.put(buffer, 0, readCount);
-			}
-
-		} finally {
-			if (connection != null) {
-				connection.disconnect();
-			}
-		}
-	}
-
-	public void write(ByteBuffer buf, long offset, boolean isWritepage) throws IOException {
-		log.info("GoogleDocsFS.write()" + this);
-		log.info(isWritepage + " " + buf + " " + offset);
-
-		File tempFile = new File("/tmp", document.getName() + ".gdocs");
-
-		FileOutputStream fos = getOutputStream(tempFile);
-		fos.getChannel().write(buf, offset);
-	}
-
-	private FileOutputStream fos;
-
-	private FileOutputStream getOutputStream(File tempFile) throws FileNotFoundException {
-		if (fos == null) {
-			log.info("creating output stream to:" + tempFile);
-			fos = new FileOutputStream(tempFile, true);
-		}
-		return fos;
-	}
-
-	private HttpURLConnection getConnection(String httpMethod)
-			throws IOException {
-		HttpURLConnection.setDefaultAllowUserInteraction(true);
-
-		URL source = document.getDownloadURL();
-		HttpURLConnection connection = (HttpURLConnection) source.openConnection();
-		HttpAuthToken authToken = (HttpAuthToken) service.getAuthTokenFactory().getAuthToken();
-		String header = authToken.getAuthorizationHeader(source, httpMethod);
-		connection.setRequestProperty("Authorization", header);
-		connection.setRequestProperty("User-Agent", USER_AGENT);
-		connection.setRequestMethod(httpMethod);
-		return connection;
-	}
-
-	public void release() {
-		log.info("  " + this + " released");
 	}
 
 	@Override
-	protected void finalize() {
-		log.info("  " + this + " finalized");
-	}
-
-	@Override
-	public String toString() {
+	public final String toString() {
 		return "DocumentHandler[" + document + ", hashCode=" + hashCode() + "]";
 	}
 

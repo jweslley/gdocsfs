@@ -16,14 +16,9 @@
 
 package com.google.gdocsfs;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.ResourceBundle;
 
-import fuse.Filesystem3;
 import fuse.FuseMount;
-import fuse.XattrSupport;
 
 /**
  * @author Jonhnny Weslley
@@ -31,6 +26,7 @@ import fuse.XattrSupport;
 public class Mounter {
 
 	public static void main(String[] args) {
+		args =new String[]{ "/tmp/gdocs" };
 		ResourceBundle properties = ResourceBundle.getBundle("gdocsfs");
 
 		String username = properties.getString("username");
@@ -43,25 +39,11 @@ public class Mounter {
 		String[] fuseArgs = new String[] { "-f", "-s", args[0] };
 		try {
 			GoogleDocsFS gdocsfs = new GoogleDocsFS(username, password);
-			FuseMount.mount(fuseArgs, intercept(gdocsfs), gdocsfs.log);
+			FuseMount.mount(fuseArgs, gdocsfs, gdocsfs.log);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	static Filesystem3 intercept(final GoogleDocsFS gDocsFS) {
-		boolean dontTraceMethodsCalls = !gDocsFS.log.isDebugEnabled();
-		return dontTraceMethodsCalls ? gDocsFS : (Filesystem3) Proxy.newProxyInstance(
-			Thread.currentThread().getContextClassLoader(), 
-			new Class[] {Filesystem3.class, XattrSupport.class}, new InvocationHandler() {
-				@Override public Object invoke(Object proxy, Method method,
-						Object[] args) throws Throwable {
-					gDocsFS.log.debug(method.getName());
-					return method.invoke(gDocsFS, args);
-				}
-		});
-	}
-	
-	
 }
 

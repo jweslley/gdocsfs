@@ -4,7 +4,7 @@
   <groupId>com.google</groupId>
   <artifactId>gdocsfs</artifactId>
   <packaging>jar</packaging>
-  <version>0.0.1</version>
+  <version>0.1-beta</version>
   <name>Google Docs File System</name>
   <url>http://code.google.com/p/gdocsfs/</url>
   <inceptionYear>2008</inceptionYear>
