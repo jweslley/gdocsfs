@@ -65,42 +65,33 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 	private final DocsService service;
 	private final URL documentListFeedUrl;
 
-	public GoogleDocsFS(String username, String password) throws IOException,
-			ServiceException {
+	public GoogleDocsFS(String username, String password) throws IOException, ServiceException {
 		service = new DocsService("gdocsfs");
 		service.setUserCredentials(username, password);
 		documentListFeedUrl = new URL(DOCUMENTS_FEED);
 
-		DocumentListFeed feed = service.getFeed(documentListFeedUrl,
-				DocumentListFeed.class);
+		DocumentListFeed feed = service.getFeed(documentListFeedUrl, DocumentListFeed.class);
 		List<DocumentListEntry> entries = feed.getEntries();
-		
+
 		log.info(username + " has " + entries.size() + " documents");
 		root = new Folder("");
-
-		for (DocumentListEntry entry : entries) {
-			Document document = new Document();
-			String shortId = entry.getId().substring(
-					entry.getId().lastIndexOf('/') + 1);
-			String id = shortId.split("%3A")[1];
-			String type = shortId.split("%3A")[0];
-			document.setId(id);
-			document.setName(entry.getTitle().getPlainText());
-			document.setLastUpdated(entry.getUpdated().getValue());
-			document.setDocumentType(DocumentType.valueOf(type.toUpperCase()));
-			document.setSize(getDocumentSize(document));
-			root.addDocument(document);
-			log.debug(document);
+		HttpDocumentHandler httpDocumentHandler = new HttpDocumentHandler(service, log);
+		for (DocumentListEntry entry : entries.subList(0, 1)) {
+			root.addDocument(new Document(httpDocumentHandler, entry));
 		}
-		root.setSize(getDocumentSize(root));
 
 		log.info("ready to use");
 	}
 
-
 	// Supported operations
 
-	public int getattr(String path, FuseGetattrSetter getattrSetter) {
+	public final int statfs(FuseStatfsSetter statfsSetter) {
+		statfsSetter.set(BLOCK_SIZE, 1000, 200, 180,
+				root.getDocuments().size(), 0, NAME_LENGTH);
+		return 0;
+	}
+
+	public final int getattr(String path, FuseGetattrSetter getattrSetter) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -110,7 +101,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 		long size = document.getSize();
 		int time = (int) (System.currentTimeMillis() / 1000L);
 		int mtime = (int) (document.getLastUpdated() / 1000);
-		getattrSetter.set(document.hashCode(), 
+		getattrSetter.set(document.hashCode(),
 				document.getFileType() | DEFAULT_MODE,
 				1, 0, 0, 0,
 				size , (size + BLOCK_SIZE - 1) / BLOCK_SIZE,
@@ -118,7 +109,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 		return 0;
 	}
 
-	public int getdir(String path, FuseDirFiller filler) {
+	public final int getdir(String path, FuseDirFiller filler) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -132,13 +123,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 		return 0;
 	}
 
-	public int statfs(FuseStatfsSetter statfsSetter) {
-		statfsSetter.set(BLOCK_SIZE, 1000, 200, 180,
-				root.getDocuments().size(), 0, NAME_LENGTH);
-		return 0;
-	}
-
-	public int open(String path, int flags, FuseOpenSetter openSetter) {
+	public final int open(String path, int flags, FuseOpenSetter openSetter) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -146,132 +131,118 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 		}
 
 		openSetter.setKeepCache(true);
-		openSetter.setFh(new DocumentHandler(service, document, log));
+		try {
+			openSetter.setFh(new DocumentHandler(document).open());
+
+		} catch (IOException e) {
+			return Errno.EIO;
+		}
 		return 0;
 	}
 
-	public int read(String path, Object fh, ByteBuffer buf, long offset) {
-		if (fh instanceof DocumentHandler) {
-			try {
-				((DocumentHandler) fh).read(buf, offset);
-				return 0;
-
-			} catch (IOException e) {
-				return Errno.EIO;
-			}
+	public final int read(String path, Object fh, ByteBuffer buf, long offset) {
+		if (!(fh instanceof DocumentHandler)) {
+			return Errno.EBADF;
 		}
-		return Errno.EBADF;
+
+		try {
+			((DocumentHandler) fh).read(buf, offset);
+			return 0;
+
+		} catch (IOException e) {
+			return Errno.EIO;
+		}
 	}
 
-	public int flush(String path, Object fh) {
+	public final int write(String path, Object fh, boolean isWritepage,
+			ByteBuffer buf, long offset) throws FuseException {
+		if (!(fh instanceof DocumentHandler)) {
+			return Errno.EBADF;
+		}
+
+		try {
+			((DocumentHandler) fh).write(buf, offset);
+			return 0;
+
+		} catch (IOException e) {
+			return Errno.EIO;
+		}
+	}
+
+	public final int flush(String path, Object fh) {
 		return fsync(path, fh, false);
 	}
 
-	public int fsync(String path, Object fh, boolean isDatasync) {
+	public final int fsync(String path, Object fh, boolean isDatasync) {
 		return (fh instanceof DocumentHandler) ? 0 : Errno.EBADF;
 	}
 
-	public int release(String path, Object fh, int flags) {
-		if (fh instanceof DocumentHandler) {
+	public final int release(String path, Object fh, int flags) {
+		if (!(fh instanceof DocumentHandler)) {
+			return Errno.EBADF;
+		}
+
+		try {
 			((DocumentHandler) fh).release();
 			System.runFinalization();
 			return 0;
+
+		} catch (IOException e) {
+			return Errno.EIO;
 		}
-
-		return Errno.EBADF;
-	}
-
-	private Document getDocument(String path) {
-		if (path.equals("/")) {
-			return root;
-		}
-
-		File file = new File(path);
-		Document parent = getDocument(file.getParent());
-		Document node = (parent instanceof Folder) ? ((Folder) parent)
-				.getDocument(file.getName()) : null;
-
-		if (log.isDebugEnabled()) {
-			log.info("  lookup(\"" + path + "\") returning: " + node);
-		}
-
-		return node;
-	}
-
-	private long getDocumentSize(Document document) throws IOException {
-		if (document instanceof Folder) {
-			return document.getDocuments().size() * NAME_LENGTH;
-		}
-
-		DocumentHandler handler = new DocumentHandler(service, document, log);
-		return handler.getContentLength();
 	}
 
 
 	// Unsupported operations
 
-	public int chmod(String path, int mode) {
+	public final int chmod(String path, int mode) {
 		return 0;
 	}
 
-	public int chown(String path, int uid, int gid) {
+	public final int chown(String path, int uid, int gid) {
 		return 0;
 	}
 
-	public int utime(String path, int atime, int mtime) {
+	public final int utime(String path, int atime, int mtime) {
 		return 0;
 	}
 
-	public int readlink(String path, CharBuffer link) {
+	public final int link(String from, String to) {
+		return Errno.EROFS;
+	}
+
+	public final int symlink(String from, String to) {
+		return Errno.EROFS;
+	}
+
+	public final int readlink(String path, CharBuffer link) {
 		return Errno.ENOENT;
+	}
+
+	public final int truncate(String path, long size) {
+		return Errno.ENOTSUPP;
 	}
 
 
 	// Read-only file system operations
 
-	public int write(String path, Object fh, boolean isWritepage,
-			ByteBuffer buf, long offset) throws FuseException {
-		if (fh instanceof DocumentHandler) {
-			try {
-				((DocumentHandler) fh).write(buf, offset, isWritepage);
-				return Errno.EROFS; // TODO just read-only
-
-			} catch (IOException e) {
-				return Errno.EIO;
-			}
-		}
-		return Errno.EBADF;
-	}
-
-	public int link(String from, String to) {
+	public final int mkdir(String path, int mode) {
 		return Errno.EROFS;
 	}
 
-	public int mkdir(String path, int mode) {
+	public final int mknod(String path, int mode, int rdev) {
 		return Errno.EROFS;
 	}
 
-	public int mknod(String path, int mode, int rdev) {
+	public final int rename(String from, String to) {
 		return Errno.EROFS;
 	}
 
-	public int rename(String from, String to) {
+	public final int rmdir(String path) {
 		return Errno.EROFS;
 	}
 
-	public int rmdir(String path) {
-		return Errno.EROFS;
-	}
-
-	public int symlink(String from, String to) {
-		return Errno.EROFS;
-	}
-
-	public int truncate(String path, long size) {
-		return 0;
-	}
-
-	public int unlink(String path) {
+	public final int unlink(String path) {
 		return Errno.EROFS;
 	}
 
@@ -279,7 +250,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 	// XattrSupport implementation
 
 	@Override
-	public int getxattr(String path, String name, ByteBuffer dst) {
+	public final int getxattr(String path, String name, ByteBuffer dst) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -295,7 +266,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 	}
 
 	@Override
-	public int getxattrsize(String path, String name, FuseSizeSetter sizeSetter) {
+	public final int getxattrsize(String path, String name, FuseSizeSetter sizeSetter) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -311,7 +282,7 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 	}
 
 	@Override
-	public int listxattr(String path, XattrLister lister) {
+	public final int listxattr(String path, XattrLister lister) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -323,13 +294,28 @@ public class GoogleDocsFS implements Filesystem3, XattrSupport, Serializable {
 	}
 
 	@Override
-	public int removexattr(String path, String name) {
+	public final int removexattr(String path, String name) {
 		return Errno.EROFS;
 	}
 
 	@Override
-	public int setxattr(String path, String name, ByteBuffer value, int flags) {
+	public final int setxattr(String path, String name, ByteBuffer value, int flags) {
 		return Errno.EROFS;
+	}
+
+
+	// private methods
+
+	private Document getDocument(String path) {
+		if (path.equals("/")) {
+			return root;
+		}
+
+		File file = new File(path);
+		Document parent = getDocument(file.getParent());
+		Document node = (parent instanceof Folder) ? ((Folder) parent).getDocument(file.getName()) : null;
+		log.debug("  lookup(\"" + path + "\") returning: " + node);
+		return node;
 	}
 
 }

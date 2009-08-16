@@ -27,27 +27,33 @@ import java.net.URL;
  * @since   1.0
  */
 public enum DocumentType {
-DOCUMENT("application/vnd.oasis.opendocument.text",
-		"https://docs.google.com/MiscCommands?command=saveasdoc&exportformat=oo&docID="),
-SPREADSHEET("application/vnd.oasis.opendocument.spreadsheet",
-		"https://spreadsheets.google.com/ccc?output=ods&key="),
-PRESENTATION("application/vnd.oasis.opendocument.presentation",
-		"https://docs.google.com/MiscCommands?command=saveasdoc&exportFormat=ppt&docID="), 
-PDF("application/pdf", "https://docs.google.com/gb?export=download&id=");
+	DOCUMENT("odt", "application/vnd.oasis.opendocument.text",
+	"https://docs.google.com/feeds/download/documents/Export?exportFormat=odt&docID="),
+	SPREADSHEET("osd", "application/vnd.oasis.opendocument.spreadsheet",
+	"https://spreadsheets.google.com/feeds/download/spreadsheets/Export?exportFormat=ods&key="),
+	PRESENTATION("ppt", "application/vnd.oasis.opendocument.presentation",
+	"https://docs.google.com/feeds/download/presentations/Export?exportFormat=ppt&docID="),
+	PDF("pdf", "application/pdf", "https://docs.google.com/gb?export=download&id=");
 
-	private String baseURL;
-	private String mimetype;
+	private final String suffix;
+	private final String baseURL;
+	private final String mimetype;
 
-	private DocumentType(String mimetype, String baseURL) {
+	private DocumentType(String suffix, String mimetype, String baseURL) {
+		this.suffix = suffix;
 		this.mimetype = mimetype;
 		this.baseURL = baseURL;
+	}
+
+	public String getSuffix() {
+		return suffix;
 	}
 
 	public String getMimetype() {
 		return mimetype;
 	}
 
-	public URL getURL(Document document) {
+	public URL getDownloadURL(Document document) {
 		try {
 			return new URL(baseURL + document.getId());
 

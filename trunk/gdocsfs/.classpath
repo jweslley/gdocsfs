@@ -3,11 +3,19 @@
 	<classpathentry kind="src" path="src/main/java"/>
 	<classpathentry kind="src" path="conf"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/activation-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging-1.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/fuse-j.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-client-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-client-meta-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/gdata-core-1.0.jar"/>
-	<classpathentry kind="lib" path="lib/gdata-docs-1.0.jar"/>
-	<classpathentry kind="lib" path="lib/gdata-docs-meta-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/gdata-media-1.0.jar"/>
+	<classpathentry kind="lib" path="lib/log4j-1.2.14.jar"/>
+	<classpathentry kind="lib" path="lib/mail-1.4.jar"/>
+	<classpathentry kind="lib" path="lib/servlet-api-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-docs-2.0.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-docs-meta-2.0.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-spreadsheet-3.0.jar"/>
+	<classpathentry kind="lib" path="lib/gdata-spreadsheet-meta-3.0.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

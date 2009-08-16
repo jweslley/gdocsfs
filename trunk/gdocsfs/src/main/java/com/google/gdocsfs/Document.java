@@ -16,9 +16,14 @@
 
 package com.google.gdocsfs;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+
+import com.google.gdata.data.docs.DocumentListEntry;
+import com.google.gdata.util.ServiceException;
 
 import fuse.FuseFtypeConstants;
 
@@ -36,6 +41,22 @@ public class Document {
 	private long lastUpdated;
 	private DocumentType type;
 	private long size;
+	private final DocumentListEntry entry;
+	private final HttpDocumentHandler handler;
+
+	public Document(HttpDocumentHandler handler, DocumentListEntry entry) throws IOException {
+		this.handler = handler;
+		this.entry = entry;
+
+		if (entry != null) {
+			String shortId = entry.getId().substring(entry.getId().lastIndexOf('/') + 1);
+			id = shortId.split("%3A")[1];
+			type = (DocumentType.valueOf(shortId.split("%3A")[0].toUpperCase()));
+			name = entry.getTitle().getPlainText();
+			lastUpdated = entry.getUpdated().getValue();
+			size = handler.getContentLength(getDownloadURL());
+		}
+	}
 
 	public String getId() {
 		return id;
@@ -78,7 +99,7 @@ public class Document {
 	}
 
 	public URL getDownloadURL() {
-		return type.getURL(this);
+		return type.getDownloadURL(this);
 	}
 
 	public String getMimetype() {
@@ -91,6 +112,23 @@ public class Document {
 
 	public Collection<Document> getDocuments() {
 		return Collections.emptyList();
+	}
+
+	public void delete() throws IOException {
+		try {
+			entry.delete();
+
+		} catch (ServiceException e) {
+			throw new IOException(e);
+		}
+	}
+
+	public void downloadTo(File target) throws IOException {
+		handler.download(getDownloadURL(), target);
+	}
+
+	public void uploadFrom(File source) throws IOException {
+		handler.upload(source, entry, getMimetype());
 	}
 
 	@Override

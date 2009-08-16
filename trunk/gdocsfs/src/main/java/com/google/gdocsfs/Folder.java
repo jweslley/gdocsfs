@@ -16,11 +16,12 @@
 
 package com.google.gdocsfs;
 
-import fuse.FuseFtypeConstants;
-
+import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import fuse.FuseFtypeConstants;
 
 /**
  * TODO make doc
@@ -33,7 +34,8 @@ public class Folder extends Document {
 
 	private final Map<String, Document> documents;
 
-	public Folder(String name) {
+	public Folder(String name) throws IOException {
+		super(null, null);
 		setName(name);
 		documents = new LinkedHashMap<String, Document>();
 	}
@@ -52,6 +54,16 @@ public class Folder extends Document {
 	}
 
 	@Override
+	public long getSize() {
+		return getDocuments().size();
+	}
+
+	@Override
+	public void setSize(long size) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public int getFileType() {
 		return FuseFtypeConstants.TYPE_DIR;
 	}
@@ -59,8 +71,8 @@ public class Folder extends Document {
 	@Override
 	public String toString() {
 		return getClass().getName()
-				+ "[ name=" + getName() + " ]"
-				+ " with " + documents.size() + " documents";
+		+ "[ name=" + getName() + " ]"
+		+ " with " + documents.size() + " documents";
 	}
 
 }
