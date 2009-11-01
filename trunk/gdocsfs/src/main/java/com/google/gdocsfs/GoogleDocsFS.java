@@ -293,8 +293,7 @@ public final class GoogleDocsFS implements Filesystem3, XattrSupport {
 
 	// XattrSupport implementation
 
-	@Override
-	public final int getxattr(String path, String name, ByteBuffer dst) {
+	public int getxattr(String path, String name, ByteBuffer dst) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -309,8 +308,7 @@ public final class GoogleDocsFS implements Filesystem3, XattrSupport {
 		return Errno.ENOATTR;
 	}
 
-	@Override
-	public final int getxattrsize(String path, String name, FuseSizeSetter sizeSetter) {
+	public int getxattrsize(String path, String name, FuseSizeSetter sizeSetter) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -325,8 +323,7 @@ public final class GoogleDocsFS implements Filesystem3, XattrSupport {
 		return Errno.ENOATTR;
 	}
 
-	@Override
-	public final int listxattr(String path, XattrLister lister) {
+	public int listxattr(String path, XattrLister lister) {
 		Document document = getDocument(path);
 
 		if (document == null) {
@@ -337,13 +334,11 @@ public final class GoogleDocsFS implements Filesystem3, XattrSupport {
 		return 0;
 	}
 
-	@Override
-	public final int removexattr(String path, String name) {
+	public int removexattr(String path, String name) {
 		return Errno.EROFS;
 	}
 
-	@Override
-	public final int setxattr(String path, String name, ByteBuffer value, int flags) {
+	public int setxattr(String path, String name, ByteBuffer value, int flags) {
 		return Errno.EROFS;
 	}
 
