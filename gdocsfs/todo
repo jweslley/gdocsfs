@@ -1,0 +1,9 @@
+fuse: failed to exec fusermount: Permission denied
+
+To fix the above output run:
+$ sudo chmod +x /bin/fusermount
+
+The following line can be used to fix
+$ sudo chmod a+rwx /etc/fuse.conf
+
+addgroup user fuse
