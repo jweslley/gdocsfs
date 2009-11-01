@@ -29,7 +29,7 @@ import fuse.FuseFtypeConstants;
 
 /**
  * TODO make doc
- * 
+ *
  * @author Jonhnny Weslley
  * @version 1.00, 10/08/2008
  * @since 1.0
@@ -42,9 +42,9 @@ public class Document {
 	private DocumentType type;
 	private long size;
 	private final DocumentListEntry entry;
-	private final HttpDocumentHandler handler;
+	private final GoogleDocs handler;
 
-	public Document(HttpDocumentHandler handler, DocumentListEntry entry) throws IOException {
+	public Document(GoogleDocs handler, DocumentListEntry entry) throws IOException {
 		this.handler = handler;
 		this.entry = entry;
 
@@ -64,6 +64,10 @@ public class Document {
 
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	public String getFullName() {
+		return name + "." + type.getSuffix();
 	}
 
 	public String getName() {
