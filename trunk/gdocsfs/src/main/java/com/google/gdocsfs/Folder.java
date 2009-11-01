@@ -41,11 +41,16 @@ public class Folder extends Document {
 	}
 
 	public void addDocument(Document document) {
-		documents.put(document.getName(), document);
+		documents.put(document.getFullName(), document);
 	}
 
 	public Document getDocument(String documentName) {
 		return documents.get(documentName);
+	}
+
+	@Override
+	public String getFullName() {
+		return getName();
 	}
 
 	@Override
@@ -71,7 +76,7 @@ public class Folder extends Document {
 	@Override
 	public String toString() {
 		return getClass().getName()
-		+ "[ name=" + getName() + " ]"
+		+ "[ name=" + getFullName() + " ]"
 		+ " with " + documents.size() + " documents";
 	}
 

@@ -26,39 +26,39 @@ import java.util.UUID;
 
 /**
  * TODO make doc
- * 
+ *
  * @author Jonhnny Weslley
  * @version 1.00, 10/08/2008
  * @since 1.0
  */
 public class DocumentHandler {
 
-	private File tempFile;
 	private boolean wasModified;
-	private FileChannel channel;
+	private final File tempFile;
+	private final FileChannel channel;
 	private final Document document;
 
-	public DocumentHandler(Document document) {
+	private DocumentHandler(Document document, File tempFile) throws IOException {
 		this.document = document;
+		this.tempFile = tempFile;
+		channel = (new RandomAccessFile(tempFile, "rw")).getChannel();
+	}
+
+	public final static DocumentHandler open(Document document) throws IOException {
+		String uuid = UUID.randomUUID().toString();
+		File tempFile = File.createTempFile(uuid, document.getDocumentType().getSuffix());
+		document.downloadTo(tempFile);
+		return new DocumentHandler(document, tempFile);
 	}
 
 	public final boolean isOpen() {
-		return (channel != null) && channel.isOpen();
+		return channel.isOpen();
 	}
 
 	private void checkIsOpen() throws IOException {
 		if (!isOpen()) {
 			throw new ClosedChannelException();
 		}
-	}
-
-	public final DocumentHandler open() throws IOException {
-
-		String uuid = UUID.randomUUID().toString();
-		tempFile = File.createTempFile(uuid, document.getDocumentType().getSuffix());
-		document.downloadTo(tempFile);
-		channel = (new RandomAccessFile(tempFile, "rw")).getChannel();
-		return this;
 	}
 
 	public final void read(ByteBuffer buffer, long offset) throws IOException {
@@ -94,7 +94,6 @@ public class DocumentHandler {
 
 		} finally {
 			channel.close();
-			channel = null;
 		}
 	}
 

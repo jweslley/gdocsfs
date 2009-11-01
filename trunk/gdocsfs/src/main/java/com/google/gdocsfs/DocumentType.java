@@ -29,7 +29,7 @@ import java.net.URL;
 public enum DocumentType {
 	DOCUMENT("odt", "application/vnd.oasis.opendocument.text",
 	"https://docs.google.com/feeds/download/documents/Export?exportFormat=odt&docID="),
-	SPREADSHEET("osd", "application/vnd.oasis.opendocument.spreadsheet",
+	SPREADSHEET("ods", "application/vnd.oasis.opendocument.spreadsheet",
 	"https://spreadsheets.google.com/feeds/download/spreadsheets/Export?exportFormat=ods&key="),
 	PRESENTATION("ppt", "application/vnd.oasis.opendocument.presentation",
 	"https://docs.google.com/feeds/download/presentations/Export?exportFormat=ppt&docID="),

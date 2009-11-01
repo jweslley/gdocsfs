@@ -21,39 +21,97 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import com.google.gdata.client.docs.DocsService;
 import com.google.gdata.client.http.HttpAuthToken;
+import com.google.gdata.data.PlainTextConstruct;
+import com.google.gdata.data.docs.DocumentEntry;
 import com.google.gdata.data.docs.DocumentListEntry;
+import com.google.gdata.data.docs.DocumentListFeed;
+import com.google.gdata.data.docs.PresentationEntry;
+import com.google.gdata.data.docs.SpreadsheetEntry;
 import com.google.gdata.data.media.MediaFileSource;
 import com.google.gdata.util.ServiceException;
 
 /**
  * TODO make doc
- * 
+ *
  * @author Jonhnny Weslley
  * @version 1.00, 10/08/2008
  * @since 1.0
  */
-public class HttpDocumentHandler {
+public class GoogleDocs {
 
 	static {
 		URLConnection.setDefaultAllowUserInteraction(true);
 	}
 
-	private static final int BLOCK_SIZE = 4096 * 4;
+	private static final Log log = LogFactory.getLog(GoogleDocs.class);
+	private static final String DOCUMENTS_URL = "http://docs.google.com/feeds/documents/private/full";
 	private static final String USER_AGENT = "gdocsfs";
+	private static final int BLOCK_SIZE = 4096 * 8;
 
-	private final Log log;
+	private final Folder root;
 	private final DocsService service;
 
-	public HttpDocumentHandler(DocsService service, Log log) {
-		this.log = log;
-		this.service = service;
+	public GoogleDocs(String username, String password) throws IOException, ServiceException {
+		service = new DocsService("gdocsfs");
+		service.setUserCredentials(username, password);
+		URL documentListFeedUrl = new URL(DOCUMENTS_URL);
+
+		DocumentListFeed feed = service.getFeed(documentListFeedUrl, DocumentListFeed.class);
+		List<DocumentListEntry> entries = feed.getEntries();
+
+		log.info(username + " has " + entries.size() + " documents");
+		root = new Folder("");
+		root.setLastUpdated(System.currentTimeMillis());
+		for (DocumentListEntry entry : entries.subList(0, 1)) {
+			root.addDocument(new Document(this, entry));
+		}
+
+		log.info("ready to use");
+	}
+
+	public Document getDocument(String path) {
+		if (path.equals("/")) {
+			return root;
+		}
+
+		File file = new File(path);
+		Document parent = getDocument(file.getParent());
+		return (parent instanceof Folder) ? ((Folder) parent).getDocument(file.getName()) : null;
+	}
+
+	public void newDocument(String path) throws MalformedURLException, IOException, ServiceException {
+		File file = new File(path);
+		String name = file.getName();
+		int indexOf = name.indexOf('.');
+		String suffix = indexOf > 0 ? name.substring(indexOf + 1) : "";
+		name = indexOf > 0 ? name.substring(0, indexOf) : "";
+		System.out.println(name);
+		System.out.println(suffix);
+		DocumentListEntry newEntry = null;
+		if (DocumentType.DOCUMENT.getSuffix().equals(suffix)) {
+			newEntry = new DocumentEntry();
+
+		} else if (DocumentType.PRESENTATION.getSuffix().equals(suffix)) {
+			newEntry = new PresentationEntry();
+
+		} else if (DocumentType.SPREADSHEET.getSuffix().equals(suffix)) {
+			newEntry = new SpreadsheetEntry();
+		}
+		System.out.println(newEntry);
+		newEntry.setTitle(new PlainTextConstruct(name));
+
+		DocumentListEntry entry = service.insert(new URL(DOCUMENTS_URL), newEntry);
+		root.addDocument(new Document(this, entry));
 	}
 
 	public final void download(URL source, File target) throws IOException {
