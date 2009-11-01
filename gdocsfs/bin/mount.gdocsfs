@@ -32,7 +32,7 @@
 #
 #   GDOCSFS_OPTS     The parameters passed to the Java VM when running GDocsFS.
 #                      e.g. to set the maximum amount of heap to use, in MB
-#                      set GDOCSFS_OPTS=-Xmx1000m
+#                      set GDOCSFS_OPTS=-Xmx256m
 #
 #   JAVA_HOME        Must point at your Java Development Kit installation.
 #
@@ -51,7 +51,7 @@ fi
 # the root of the GDocsFS installation
 GDOCSFS_HOME=$1
 GDOCSFS_CONF_DIR=${GDOCSFS_HOME}/conf
-GDOCSFS_OPTS="-Xmx1000m"
+GDOCSFS_OPTS="-Xmx256m"
 QUOTED_ARGS=""
 
 if [ "$1" != "" ] ; then
@@ -85,8 +85,8 @@ for jar in `ls $GDOCSFS_HOME/lib/*.jar` ; do
   CLASSPATH=$CLASSPATH:$jar
 done
 
-LD_LIBRARY_PATH=$GDOCSFS_HOME/native:$GDOCSFS_HOME/lib \
-    $JAVA $GDOCSFS_OPTS \
+$JAVA $GDOCSFS_OPTS \
+	-Djava.library.path="$GDOCSFS_HOME/native/`uname -m`"
     -classpath "$CLASSPATH" \
     -Dgdocsfs.home="$GDOCSFS_HOME" \
-    com.google.gdocsfs.Mounter "$@"
+    com.google.gdocsfs.GoogleDocsFS "$@"
