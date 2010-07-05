@@ -1,6 +1,7 @@
 <projectDescription>
   <name>gdocsfs</name>
-  <comment/>
+  <comment>Google Docs File System (gdocsfs) provides a mountable Linux filesystem
+		which uses your Google Docs account as its storage medium. NO_M2ECLIPSE_SUPPORT: Project files created with the maven-eclipse-plugin are not supported in M2Eclipse.</comment>
   <projects/>
   <buildSpec>
     <buildCommand>
