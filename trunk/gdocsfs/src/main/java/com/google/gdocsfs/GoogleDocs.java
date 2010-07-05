@@ -86,7 +86,7 @@ public class GoogleDocs {
 
 		File file = new File(path);
 		Document parent = getDocument(file.getParent());
-		return (parent instanceof Folder) ? ((Folder) parent).getDocument(file.getName()) : null;
+		return parent instanceof Folder ? ((Folder) parent).getDocument(file.getName()) : null;
 	}
 
 	public void newDocument(String path) throws MalformedURLException, IOException, ServiceException {
@@ -147,7 +147,7 @@ public class GoogleDocs {
 			target.updateMedia(false);
 
 		} catch (ServiceException e) {
-			throw new IOException(e);
+			throw new IOException(e.getMessage());
 		}
 	}
 

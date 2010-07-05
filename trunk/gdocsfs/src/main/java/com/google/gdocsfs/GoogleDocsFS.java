@@ -175,7 +175,7 @@ public final class GoogleDocsFS implements Filesystem3, XattrSupport {
 	}
 
 	public int fsync(String path, Object fh, boolean isDatasync) {
-		return (fh instanceof DocumentHandler) ? 0 : Errno.EBADF;
+		return fh instanceof DocumentHandler ? 0 : Errno.EBADF;
 	}
 
 	public int release(String path, Object fh, int flags) {
@@ -350,9 +350,10 @@ public final class GoogleDocsFS implements Filesystem3, XattrSupport {
 
 		String username = properties.getString("username");
 		String password = properties.getString("password");
-		if (password == null || password.trim().isEmpty()) {
-			char[] pass = System.console().readPassword("Google account password(%s): ", username);
-			password = new String(pass);
+		if (password == null || password.trim().length() == 0) {
+//			char[] pass = System.console().readPassword("Google account password(%s): ", username);
+//			password = new String(pass);
+			throw new UnsupportedOperationException();
 		}
 
 		String mountPoint = args[0];

@@ -51,7 +51,7 @@ public class Document {
 		if (entry != null) {
 			String shortId = entry.getId().substring(entry.getId().lastIndexOf('/') + 1);
 			id = shortId.split("%3A")[1];
-			type = (DocumentType.valueOf(shortId.split("%3A")[0].toUpperCase()));
+			type = DocumentType.valueOf(shortId.split("%3A")[0].toUpperCase());
 			name = entry.getTitle().getPlainText();
 			lastUpdated = entry.getUpdated().getValue();
 			size = handler.getContentLength(getDownloadURL());
@@ -123,7 +123,7 @@ public class Document {
 			entry.delete();
 
 		} catch (ServiceException e) {
-			throw new IOException(e);
+			throw new IOException(e.getMessage());
 		}
 	}
 
