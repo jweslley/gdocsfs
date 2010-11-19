@@ -7,3 +7,5 @@ The following line can be used to fix
 $ sudo chmod a+rwx /etc/fuse.conf
 
 addgroup user fuse
+
+If an error happens, and it will, show all info as possible: Plataform, Java version, ...
